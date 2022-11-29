@@ -19,11 +19,24 @@ import QGroundControl.Controllers   1.0
 import QGroundControl.ScreenTools   1.0
 
 Item {
+    anchors.fill: parent
 
     property var    _activeVehicle: QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable ? QGroundControl.multiVehicleManager.activeVehicle : null
     property real   _margins:       ScreenTools.defaultFontPixelHeight
     property string _noVehicleText: qsTr("No vehicle connected")
-    property string _assignQmlFile: "<p>" +
+
+    // Test Button
+    QGCButton {
+        anchors.left: parent.left
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: 20
+        anchors.bottomMargin: 20
+        text: "Send Command"
+        onClicked: _activeVehicle.sendCommand(147, 183, true, 8, 1600)
+    }
+
+
+    /*property string _assignQmlFile: "<p>" +
         "You can create your own commands and parameter editing user interface in this widget. " +
         "You do this by providing your own Qml file. " +
         "This support is a work in progress and the details may change somewhat in the future. " +
@@ -117,5 +130,5 @@ Item {
             }
 
         }
-    }
+    }*/
 }
