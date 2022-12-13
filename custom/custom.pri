@@ -3,7 +3,7 @@ message("Adding Custom Plugin")
 #-- Version control
 #   Major and minor versions are defined here (manually)
 
-CUSTOM_QGC_VER_MAJOR = 0
+CUSTOM_QGC_VER_MAJOR = 1
 CUSTOM_QGC_VER_MINOR = 0
 CUSTOM_QGC_VER_FIRST_BUILD = 0
 
@@ -23,12 +23,7 @@ DEFINES += GIT_VERSION=\"\\\"$$CUSTOM_QGC_VERSION\\\"\"
 message(Custom QGC Version: $${CUSTOM_QGC_VERSION})
 
 # Build a single flight stack by disabling APM support
-MAVLINK_CONF = common
-CONFIG  += QGC_DISABLE_APM_MAVLINK
-CONFIG  += QGC_DISABLE_APM_PLUGIN QGC_DISABLE_APM_PLUGIN_FACTORY
-
-# We implement our own PX4 plugin factory
-CONFIG  += QGC_DISABLE_PX4_PLUGIN_FACTORY
+# MAVLINK_CONF = common
 
 # Branding
 
@@ -57,36 +52,11 @@ QML_IMPORT_PATH += \
 
 # Our own, custom sources
 SOURCES += \
-    $$PWD/src/CustomPlugin.cc \
-    $$PWD/src/CustomQuickInterface.cc \
-    $$PWD/src/CustomVideoManager.cc
+    $$PWD/src/CustomPlugin.cc
 
 HEADERS += \
-    $$PWD/src/CustomPlugin.h \
-    $$PWD/src/CustomQuickInterface.h \
-    $$PWD/src/CustomVideoManager.h
+    $$PWD/src/CustomPlugin.h
 
 INCLUDEPATH += \
     $$PWD/src \
-
-#-------------------------------------------------------------------------------------
-# Custom Firmware/AutoPilot Plugin
-
-INCLUDEPATH += \
-    $$QGCROOT/custom/src/FirmwarePlugin \
-    $$QGCROOT/custom/src/AutoPilotPlugin
-
-HEADERS+= \
-    $$QGCROOT/custom/src/AutoPilotPlugin/CustomAutoPilotPlugin.h \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomCameraControl.h \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomCameraManager.h \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomFirmwarePlugin.h \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomFirmwarePluginFactory.h \
-
-SOURCES += \
-    $$QGCROOT/custom/src/AutoPilotPlugin/CustomAutoPilotPlugin.cc \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomCameraControl.cc \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomCameraManager.cc \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomFirmwarePlugin.cc \
-    $$QGCROOT/custom/src/FirmwarePlugin/CustomFirmwarePluginFactory.cc \
 
