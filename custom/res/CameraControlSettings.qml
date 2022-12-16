@@ -89,23 +89,6 @@ Item {
                         customPlugin.targetComponentId = value;
                     }
                 }
-
-                QGCLabel {
-                    text: "Zoom Timer Delay (ms)"
-                }
-
-                SpinBox {
-                    Layout.minimumWidth: 150
-
-                    editable: true
-                    from: 0
-                    to: 1000
-                    value: customPlugin.zoomTimerDuration
-                    textFromValue: function(value) {return value;}
-                    onValueModified: {
-                        customPlugin.zoomTimerDuration = value;
-                    }
-                }
             }
         }
     }

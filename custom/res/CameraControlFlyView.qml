@@ -266,26 +266,7 @@ Item {
                    }
 
                    onPressed: onButtonAction('zoom', modelData.top ? 'in' : 'out')
-                   onReleased: {
-                       onButtonAction('zoom');
-                       _zoomTimer.valueName = modelData.top ? 'out' : 'in';
-                       _zoomTimer.restart();
-                   }
-
-                   Timer {
-                       property var valueName
-                       id: _zoomTimer
-                       interval: customPlugin.zoomTimerDuration
-                       onTriggered: {
-                           onButtonAction('zoom', valueName);
-
-                           if(valueName !== undefined)
-                           {
-                               valueName = undefined;
-                               _zoomTimer.restart();
-                           }
-                       }
-                   }
+                   onReleased: onButtonAction('zoom');
                }
             }
 

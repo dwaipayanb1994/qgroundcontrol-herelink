@@ -32,7 +32,6 @@ public:
     Q_PROPERTY(int nbCameras READ nbCameras WRITE setNbCameras NOTIFY nbCamerasChanged)
     Q_PROPERTY(int targetSystemId READ targetSystemId WRITE setTargetSystemId NOTIFY targetSystemIdChanged)
     Q_PROPERTY(int targetComponentId READ targetComponentId WRITE setTargetComponentId NOTIFY targetComponentIdChanged)
-    Q_PROPERTY(int zoomTimerDuration READ zoomTimerDuration WRITE setZoomTimerDuration NOTIFY zoomTimerDurationChanged)
 
     CustomPlugin(QGCApplication* app, QGCToolbox *toolbox);
 
@@ -40,12 +39,10 @@ public:
     int nbCameras() const {return _nbCameras;}
     int targetSystemId() const {return _targetSysId;}
     int targetComponentId() const {return _targetCompId;}
-    int zoomTimerDuration() const {return _zoomTimerDuration;}
 
     void setNbCameras(int nbCameras) {_nbCameras = nbCameras; emit nbCamerasChanged(nbCameras); }
     void setTargetSystemId(int targetSystemId) {_targetSysId = targetSystemId; emit targetSystemIdChanged(targetSystemId); }
     void setTargetComponentId(int targetComponentId) {_targetCompId = targetComponentId; emit targetComponentIdChanged(targetComponentId);}
-    void setZoomTimerDuration(int zoomTimerDuration) {_zoomTimerDuration = zoomTimerDuration; emit zoomTimerDurationChanged(zoomTimerDuration);}
 
     /**
      * @brief Overrides the channel RAW value.
@@ -66,7 +63,6 @@ signals:
     void nbCamerasChanged(int);
     void targetSystemIdChanged(int);
     void targetComponentIdChanged(int);
-    void zoomTimerDurationChanged(int);
 
 private slots:
     void onSettingsChanged();
@@ -79,7 +75,7 @@ private:
 private:
     QVariantList   _customSettingsList;
 
-    int _nbCameras, _targetSysId, _targetCompId, _zoomTimerDuration;
+    int _nbCameras, _targetSysId, _targetCompId;
     int _channels[MAX_CHANNELS_COUNT];
     int _timerId;
 

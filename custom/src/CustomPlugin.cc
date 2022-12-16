@@ -154,7 +154,6 @@ void CustomPlugin::loadSetting()
     _nbCameras = settings.value("CameraControls/nbCameras", 0).toInt();
     _targetSysId = settings.value("CameraControls/targetSystemId", 1).toInt();
     _targetCompId = settings.value("CameraControls/targetComponentId", 1).toInt();
-    _zoomTimerDuration = settings.value("CameraControls/zoomTimerDuration", 100).toInt();
 
     // Make sure settings values are correct (incase they get correpted)
     if(_nbCameras < 0 || _nbCameras > MAX_CAMERAS_COUNT)
@@ -166,9 +165,6 @@ void CustomPlugin::loadSetting()
     if(_targetCompId < 0 || _targetCompId > 255)
         _targetCompId = 1;
 
-    if(_zoomTimerDuration < 0 || _zoomTimerDuration > 1000)
-        _targetCompId = 100;
-
     onSettingsChanged();
 }
 
@@ -179,7 +175,6 @@ void CustomPlugin::saveSettings()
     settings.setValue("nbCameras", _nbCameras);
     settings.setValue("targetSystemId", _targetSysId);
     settings.setValue("targetComponentId", _targetCompId);
-    settings.setValue("zoomTimerDuration", _zoomTimerDuration);
     settings.sync();
 }
 
