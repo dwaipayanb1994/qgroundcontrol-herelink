@@ -45,6 +45,8 @@ Item {
                 }
 
                 SpinBox {
+                    Layout.minimumWidth: 150
+
                     from: 0
                     to: customPlugin.maxCameras
                     value: customPlugin.nbCameras
@@ -59,6 +61,8 @@ Item {
                 }
 
                 SpinBox {
+                    Layout.minimumWidth: 150
+
                     editable: true
                     from: 0
                     to: 255
@@ -74,6 +78,8 @@ Item {
                 }
 
                 SpinBox {
+                    Layout.minimumWidth: 150
+
                     editable: true
                     from: 0
                     to: 255
@@ -81,6 +87,23 @@ Item {
                     textFromValue: function(value) {return value;}
                     onValueModified: {
                         customPlugin.targetComponentId = value;
+                    }
+                }
+
+                QGCLabel {
+                    text: "Zoom Timer Delay (ms)"
+                }
+
+                SpinBox {
+                    Layout.minimumWidth: 150
+
+                    editable: true
+                    from: 0
+                    to: 1000
+                    value: customPlugin.zoomTimerDuration
+                    textFromValue: function(value) {return value;}
+                    onValueModified: {
+                        customPlugin.zoomTimerDuration = value;
                     }
                 }
             }

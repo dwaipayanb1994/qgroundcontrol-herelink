@@ -17,6 +17,8 @@
 QGC_LOGGING_CATEGORY(CameraControl, "CameraControl")
 
 constexpr ushort VALUE_IGNORE_CHANNEL = 0xFFFF;
+constexpr ushort VALUE_RELEASE_CHANNEL_1_TO_8 = 0;
+constexpr ushort VALUE_RELEASE_CHANNEL_9_TO_18 = 0xFFFF-1;
 
 CustomOptions::CustomOptions(CustomPlugin*, QObject* parent) : QGCOptions(parent)
 {
@@ -40,6 +42,15 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox) : QGCCorePl
     connect(this, &CustomPlugin::nbCamerasChanged, this, &CustomPlugin::onSettingsChanged);
     connect(this, &CustomPlugin::targetSystemIdChanged, this, &CustomPlugin::onSettingsChanged);
     connect(this, &CustomPlugin::targetComponentIdChanged, this, &CustomPlugin::onSettingsChanged);
+
+    connect(qApp, &QGCApplication::aboutToQuit, this, [this]()
+    {
+       // TODO: set only channels that are configured
+       for(int i = 0; i < MAX_CHANNELS_COUNT; i++)
+           _channels[i] = i < 9 ? VALUE_RELEASE_CHANNEL_1_TO_8 : VALUE_RELEASE_CHANNEL_9_TO_18;
+
+       updateRCChannels();
+    });
 }
 
 QGCOptions* CustomPlugin::options()
@@ -80,7 +91,7 @@ void CustomPlugin::onSettingsChanged()
     if(_timerId == 0 && _nbCameras != 0)
     {
         // No timer is running and there's at least one cam control -> start timer
-        _timerId = startTimer(500);
+        _timerId = startTimer(20);
     }
     else if(_timerId != 0 && _nbCameras == 0)
     {
@@ -93,38 +104,7 @@ void CustomPlugin::onSettingsChanged()
     saveSettings();
 }
 
-void CustomPlugin::loadSetting()
-{
-    QSettings settings;
-
-    _nbCameras = settings.value("CameraControls/nbCameras", 0).toInt();
-    _targetSysId = settings.value("CameraControls/targetSystemId", 1).toInt();
-    _targetCompId = settings.value("CameraControls/targetComponentId", 1).toInt();
-
-    // Make sure settings values are correct (incase they get correpted)
-    if(_nbCameras < 0 || _nbCameras > MAX_CAMERAS_COUNT)
-        _nbCameras = 0;
-
-    if(_targetSysId < 0 || _targetSysId > 255)
-        _targetSysId = 1;
-
-    if(_targetCompId < 0 || _targetCompId > 255)
-        _targetCompId = 1;
-
-    onSettingsChanged();
-}
-
-void CustomPlugin::saveSettings()
-{
-    QSettings settings;
-    settings.beginGroup("CameraControls");
-    settings.setValue("nbCameras", _nbCameras);
-    settings.setValue("targetSystemId", _targetSysId);
-    settings.setValue("targetComponentId", _targetCompId);
-    settings.sync();
-}
-
-void CustomPlugin::timerEvent(QTimerEvent *event)
+void CustomPlugin::updateRCChannels()
 {
     if(_activeVehicle)
     {
@@ -165,6 +145,47 @@ void CustomPlugin::timerEvent(QTimerEvent *event)
     {
         qDebug() << "CameraControl" << "No Vehicule connected!";
     }
+}
+
+void CustomPlugin::loadSetting()
+{
+    QSettings settings;
+
+    _nbCameras = settings.value("CameraControls/nbCameras", 0).toInt();
+    _targetSysId = settings.value("CameraControls/targetSystemId", 1).toInt();
+    _targetCompId = settings.value("CameraControls/targetComponentId", 1).toInt();
+    _zoomTimerDuration = settings.value("CameraControls/zoomTimerDuration", 100).toInt();
+
+    // Make sure settings values are correct (incase they get correpted)
+    if(_nbCameras < 0 || _nbCameras > MAX_CAMERAS_COUNT)
+        _nbCameras = 0;
+
+    if(_targetSysId < 0 || _targetSysId > 255)
+        _targetSysId = 1;
+
+    if(_targetCompId < 0 || _targetCompId > 255)
+        _targetCompId = 1;
+
+    if(_zoomTimerDuration < 0 || _zoomTimerDuration > 1000)
+        _targetCompId = 100;
+
+    onSettingsChanged();
+}
+
+void CustomPlugin::saveSettings()
+{
+    QSettings settings;
+    settings.beginGroup("CameraControls");
+    settings.setValue("nbCameras", _nbCameras);
+    settings.setValue("targetSystemId", _targetSysId);
+    settings.setValue("targetComponentId", _targetCompId);
+    settings.setValue("zoomTimerDuration", _zoomTimerDuration);
+    settings.sync();
+}
+
+void CustomPlugin::timerEvent(QTimerEvent *event)
+{
+    updateRCChannels();
 }
 
 void CustomPlugin::setChannelValue(int channel, int value)
