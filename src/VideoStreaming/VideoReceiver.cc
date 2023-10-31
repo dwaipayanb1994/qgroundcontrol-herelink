@@ -27,7 +27,9 @@
 #include <QDir>
 #include <QDateTime>
 #include <QSysInfo>
+#if defined(__android__)
 #include <AndroidInterface.h>
+#endif
 
 QGC_LOGGING_CATEGORY(VideoReceiverLog, "VideoReceiverLog")
 
@@ -323,7 +325,7 @@ VideoReceiver::start()
             QUrl url(_uri);
             g_object_set(static_cast<gpointer>(dataSource), "port", url.port(), nullptr);
         } else {
-            g_object_set(G_OBJECT(dataSource), "location", qPrintable(_uri), "latency", 41, "udp-reconnect", 1, "timeout", static_cast<guint64>(0), "do-retransmission", false, NULL);
+            g_object_set(G_OBJECT(dataSource), "location", qPrintable(_uri), "latency", 61, "udp-reconnect", 1, "timeout", static_cast<guint64>(0), "do-retransmission", false, NULL);
         }
 
         if (isTCP || isMPEGTS) {
@@ -412,7 +414,7 @@ VideoReceiver::start()
             g_signal_connect(demux, "pad-added", G_CALLBACK(newPadCB), parser);
         } else {
             g_signal_connect(dataSource, "pad-added", G_CALLBACK(newPadCB), demux);
-            if(!gst_element_link_many(demux, parser, _tee, queue, decoder, _videoSink, NULL)) {
+            if(!gst_element_link_many(demux, parser, _tee, queue, decoder, queue1, _videoSink, NULL)) {
                 qCritical() << "Unable to link RTSP elements.";
                 break;
             }
@@ -603,7 +605,9 @@ VideoReceiver::_handleStateChanged() {
 void
 VideoReceiver::_handleRecordingChanged() {
     if(!_recording && !_videoFile.isEmpty()) {
+#if defined(__android__)
         AndroidInterface::triggerMediaScannerScanFile(_videoFile);
+#endif
     }
 }
 #endif
@@ -731,7 +735,9 @@ VideoReceiver::startRecording(const QString &videoFile)
     if(videoFile.isEmpty()) {
         QString savePath;
         if (_videoSettings->saveSdCardEnable()->rawValue().toBool()) {
+#if defined(__android__)
             savePath = AndroidInterface::getSdcardPath();
+#endif
             if (!savePath.isEmpty()) {
                 savePath = savePath + "/QGroundControl/Video";
                 QDir savePathDir(savePath);
