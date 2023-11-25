@@ -1198,6 +1198,9 @@ signals:
     void gitHashChanged                 (QString hash);
     void vehicleUIDChanged              ();
 
+    //Custom thickness reading
+    void thicknessReadingChanged        (float);
+
     /// New RC channel values
     ///     @param channelCount Number of available channels, cMaxRcChannels max
     ///     @param pwmValues -1 signals channel not available
@@ -1316,6 +1319,7 @@ private:
     void _handleGimbalOrientation       (const mavlink_message_t& message);
     void _handleObstacleDistance        (const mavlink_message_t& message);
     void _handleFenceStatus             (const mavlink_message_t& message);
+    void _handleThicknessReading        (const mavlink_message_t& message);
     // ArduPilot dialect messages
 #if !defined(NO_ARDUPILOT_DIALECT)
     void _handleCameraFeedback          (const mavlink_message_t& message);

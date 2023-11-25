@@ -867,6 +867,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_FENCE_STATUS:
         _handleFenceStatus(message);
         break;
+    case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
+        _handleThicknessReading(message);
+        break;
     }
 
     // This must be emitted after the vehicle processes the message. This way the vehicle state is up to date when anyone else
@@ -874,6 +877,22 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     emit mavlinkMessageReceived(message);
 
     _uas->receiveMessage(message);
+}
+
+void Vehicle::_handleThicknessReading(const mavlink_message_t& message)
+{
+    mavlink_named_value_float_t debug;
+    mavlink_msg_named_value_float_decode(&message, &debug);
+    
+    char buf[11];
+    strncpy(buf, debug.name, 10);
+    buf[10] = '\0';
+    QString name = QString(buf);
+
+    if (name == "ThicknessG" && debug.value)
+    {
+        emit thicknessReadingChanged(debug.value);
+    }
 }
 
 void Vehicle::_handleFenceStatus(const mavlink_message_t& message)

@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/custom">
+        <file alias="CustomThicknessReadingFlyView.qml">res/CustomThicknessReadingFlyView.qml</file>
+    </qresource>
+</RCC>
