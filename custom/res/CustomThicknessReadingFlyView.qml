@@ -143,12 +143,13 @@ Item {
                 rowSpacing: ScreenTools.defaultFontPixelHeight * 0.3
 
                 QGCButton {
-                    text: _measuring ? "Stop" : "Measure"
-                    enabled: _utgConnected
+                    text: _utgConnected ? (_measuring ? "Stop" : "Measure") : "Connect"
                     Layout.fillWidth: true
                     Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.2
                     onClicked: {
-                        if (_measuring) {
+                        if (!_utgConnected) {
+                            _utgManager.connectToUTG()
+                        } else if (_measuring) {
                             _utgManager.stopMeasurement()
                         } else {
                             _utgManager.startSingleMeasurement()
@@ -157,11 +158,17 @@ Item {
                 }
 
                 QGCButton {
-                    text: "Continuous"
-                    enabled: _utgConnected && !_measuring
+                    text: _utgConnected ? "Continuous" : "Disconnect"
+                    enabled: _utgConnected ? !_measuring : (_utgManager !== null && _utgManager.connected)
                     Layout.fillWidth: true
                     Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2.2
-                    onClicked: _utgManager.startContinuousMeasurement()
+                    onClicked: {
+                        if (_utgConnected) {
+                            _utgManager.startContinuousMeasurement()
+                        } else if (_utgManager) {
+                            _utgManager.disconnectFromUTG()
+                        }
+                    }
                 }
 
                 QGCButton {
@@ -173,6 +180,46 @@ Item {
                     onClicked: {
                         console.log("Settings button clicked")
                         settingsDialog.open()
+                    }
+                }
+            }
+
+            // Status Information
+            Rectangle {
+                width: parent.width
+                height: statusColumn.height + ScreenTools.defaultFontPixelHeight
+                color: qgcPal.windowShade
+                radius: 4
+                visible: !_utgConnected
+
+                Column {
+                    id: statusColumn
+                    anchors.centerIn: parent
+                    width: parent.width - ScreenTools.defaultFontPixelWidth
+                    spacing: ScreenTools.defaultFontPixelHeight * 0.2
+
+                    QGCLabel {
+                        width: parent.width
+                        text: {
+                            if (!_utgEnabled) return "UTG Disabled - Enable in Settings"
+                            if (!_activeVehicle) return "No Vehicle Connected"
+                            if (!_utgManager) return "UTG Manager Not Available"
+                            if (_activeVehicle && !_activeVehicle.priorityLink) return "Vehicle Not Connected"
+                            return "Ready to Connect"
+                        }
+                        font.pointSize: ScreenTools.smallFontPointSize
+                        color: qgcPal.text
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                    }
+
+                    QGCLabel {
+                        width: parent.width
+                        text: "Vehicle ID: " + (_activeVehicle ? _activeVehicle.id : "None")
+                        font.pointSize: ScreenTools.smallFontPointSize
+                        color: qgcPal.colorGrey
+                        horizontalAlignment: Text.AlignHCenter
+                        visible: _activeVehicle !== null
                     }
                 }
             }

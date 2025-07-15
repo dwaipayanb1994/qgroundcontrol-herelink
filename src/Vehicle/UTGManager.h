@@ -138,6 +138,7 @@ private slots:
     void _onMeasurementTimer();
     void _processSettings();
     void _handleMAVLinkMessage(const mavlink_message_t& message);
+    void _onVehicleConnectionChanged();
 
 private:
     // Internal methods

@@ -58,6 +58,8 @@ UTGManager::UTGManager(Vehicle* vehicle, QObject* parent)
     // Connect to vehicle MAVLink messages for UTG data
     if (_vehicle) {
         connect(_vehicle, &Vehicle::mavlinkMessageReceived, this, &UTGManager::_handleMAVLinkMessage);
+        connect(_vehicle, &Vehicle::connectionLostChanged, this, &UTGManager::_onVehicleConnectionChanged);
+        connect(_vehicle, &Vehicle::communicationLostChanged, this, &UTGManager::_onVehicleConnectionChanged);
     }
     
     // Initial settings processing
@@ -348,7 +350,8 @@ void UTGManager::_processSettings()
         emit enabledChanged(_enabled);
     }
 
-    if (_enabled && _settings->autoConnect()->rawValue().toBool() && !_connected) {
+    // Auto-connect when enabled and vehicle is available
+    if (_enabled && !_connected && _vehicle && _vehicle->priorityLink()) {
         connectToUTG();
     } else if (!_enabled && _connected) {
         disconnectFromUTG();
@@ -365,6 +368,12 @@ void UTGManager::_setupMAVLinkConnection()
         return;
     }
 
+    if (!_vehicle->priorityLink()) {
+        _setError(tr("Vehicle has no active communication link"));
+        _setStatus(STATUS_ERROR);
+        return;
+    }
+
     // Start MAVLink data checking timer
     _mavlinkCheckTimer->start();
 
@@ -375,7 +384,7 @@ void UTGManager::_setupMAVLinkConnection()
     // Initialize UTG with current settings
     _updateSettings();
 
-    qCDebug(UTGManagerLog) << "Connected to UTG via MAVLink";
+    qCDebug(UTGManagerLog) << "Connected to UTG via MAVLink on vehicle" << _vehicle->id();
 }
 
 void UTGManager::_closeMAVLinkConnection()
@@ -592,5 +601,20 @@ void UTGManager::_handleMAVLinkMessage(const mavlink_message_t& message)
 
             qCDebug(UTGManagerLog) << "Received MAVLink SERIAL_CONTROL data:" << data.size() << "bytes";
         }
+    }
+}
+
+void UTGManager::_onVehicleConnectionChanged()
+{
+    if (!_vehicle) return;
+
+    if (_vehicle->connectionLost() || _vehicle->communicationLost()) {
+        if (_connected) {
+            qCDebug(UTGManagerLog) << "Vehicle connection lost, disconnecting UTG";
+            _closeMAVLinkConnection();
+        }
+    } else if (_enabled && !_connected) {
+        qCDebug(UTGManagerLog) << "Vehicle connection restored, attempting UTG connection";
+        connectToUTG();
     }
 }
