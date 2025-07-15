@@ -14,15 +14,11 @@
 
 #include <QObject>
 #include <QTimer>
-#ifdef __android__
-#include "qserialport.h"
-#else
-#include <QSerialPort>
-#endif
 #include <QQueue>
 #include <QMutex>
 #include "QGCLoggingCategory.h"
 #include "UTGSettings.h"
+#include "MAVLinkProtocol.h"
 
 Q_DECLARE_LOGGING_CATEGORY(UTGManagerLog)
 
@@ -137,16 +133,16 @@ signals:
     void temperatureReceived(float temperature);
 
 private slots:
-    void _onSerialDataReceived();
-    void _onSerialError(QSerialPort::SerialPortError error);
+    void _onMAVLinkDataReceived();
     void _onConnectionTimer();
     void _onMeasurementTimer();
     void _processSettings();
+    void _handleMAVLinkMessage(const mavlink_message_t& message);
 
 private:
     // Internal methods
-    void _setupSerial();
-    void _closeSerial();
+    void _setupMAVLinkConnection();
+    void _closeMAVLinkConnection();
     void _sendCommand(UTGCommand cmd, const QByteArray& data = QByteArray());
     void _processReceivedData(const QByteArray& data);
     void _handleResponse(UTGCommand cmd, const QByteArray& response);
@@ -155,13 +151,15 @@ private:
     void _updateSettings();
     QByteArray _buildCommand(UTGCommand cmd, const QByteArray& data);
     bool _validateResponse(const QByteArray& response);
+    void _sendMAVLinkData(const QByteArray& data);
+    void _handleMAVLinkData(const QByteArray& data);
 
     Vehicle* _vehicle;
     UTGSettings* _settings;
-    QSerialPort* _serialPort;
     QTimer* _connectionTimer;
     QTimer* _measurementTimer;
-    
+    QTimer* _mavlinkCheckTimer;
+
     // State variables
     bool _connected;
     bool _enabled;
@@ -169,12 +167,12 @@ private:
     UTGStatus _status;
     bool _measuring;
     QString _lastError;
-    
+
     // Communication
     QQueue<QPair<UTGCommand, QByteArray>> _commandQueue;
     QByteArray _receiveBuffer;
     QMutex _commandMutex;
-    
+
     // Settings cache
     QString _cachedSerialPort;
     int _cachedBaudRate;

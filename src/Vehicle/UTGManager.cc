@@ -11,12 +11,6 @@
 #include "Vehicle.h"
 #include "QGCApplication.h"
 #include "SettingsManager.h"
-
-#ifdef __android__
-#include "qserialportinfo.h"
-#else
-#include <QSerialPortInfo>
-#endif
 #include <QDebug>
 
 Q_LOGGING_CATEGORY(UTGManagerLog, "UTGManagerLog")
@@ -25,9 +19,9 @@ UTGManager::UTGManager(Vehicle* vehicle, QObject* parent)
     : QObject(parent)
     , _vehicle(vehicle)
     , _settings(nullptr)
-    , _serialPort(nullptr)
     , _connectionTimer(new QTimer(this))
     , _measurementTimer(new QTimer(this))
+    , _mavlinkCheckTimer(new QTimer(this))
     , _connected(false)
     , _enabled(false)
     , _currentThickness(0.0f)
@@ -49,15 +43,21 @@ UTGManager::UTGManager(Vehicle* vehicle, QObject* parent)
     // Setup timers
     _connectionTimer->setSingleShot(true);
     _measurementTimer->setSingleShot(false);
-    
+    _mavlinkCheckTimer->setSingleShot(false);
+    _mavlinkCheckTimer->setInterval(100); // Check for MAVLink data every 100ms
+
     connect(_connectionTimer, &QTimer::timeout, this, &UTGManager::_onConnectionTimer);
     connect(_measurementTimer, &QTimer::timeout, this, &UTGManager::_onMeasurementTimer);
-    
+    connect(_mavlinkCheckTimer, &QTimer::timeout, this, &UTGManager::_onMAVLinkDataReceived);
+
     // Connect to settings changes
     connect(_settings->enabled(), &Fact::rawValueChanged, this, &UTGManager::_processSettings);
-    connect(_settings->serialPort(), &Fact::rawValueChanged, this, &UTGManager::_processSettings);
-    connect(_settings->baudRate(), &Fact::rawValueChanged, this, &UTGManager::_processSettings);
     connect(_settings->autoConnect(), &Fact::rawValueChanged, this, &UTGManager::_processSettings);
+
+    // Connect to vehicle MAVLink messages for UTG data
+    if (_vehicle) {
+        connect(_vehicle, &Vehicle::mavlinkMessageReceived, this, &UTGManager::_handleMAVLinkMessage);
+    }
     
     // Initial settings processing
     _processSettings();
