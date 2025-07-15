@@ -548,36 +548,40 @@ bool UTGManager::_validateResponse(const QByteArray& response)
 
 void UTGManager::_sendMAVLinkData(const QByteArray& data)
 {
-    if (!_vehicle || data.size() > 250) {  // MAVLink named value bytes limit
+    if (!_vehicle || data.size() > 70) {  // SERIAL_CONTROL data limit
         qCWarning(UTGManagerLog) << "Cannot send MAVLink data: invalid vehicle or data too large";
         return;
     }
 
-    // Send data via MAVLink named value bytes message
-    // This will be sent as "SERIAL_CMD" to match the ArduPilot script
+    // Send data via MAVLink SERIAL_CONTROL message
     mavlink_message_t message;
-    mavlink_named_value_bytes_t namedValue;
+    mavlink_serial_control_t serialControl;
 
-    strncpy(namedValue.name, "SERIAL_CMD", 10);
-    namedValue.data_length = data.size();
-    memcpy(namedValue.data, data.constData(), data.size());
-    namedValue.time_boot_ms = QGC::groundTimeMilliseconds();
+    serialControl.device = SERIAL_CONTROL_DEV_GPS1;  // Use GPS1 as identifier
+    serialControl.flags = SERIAL_CONTROL_FLAG_RESPOND;
+    serialControl.timeout = 0;
+    serialControl.baudrate = 115200;
+    serialControl.count = data.size();
+    memcpy(serialControl.data, data.constData(), data.size());
 
-    mavlink_msg_named_value_bytes_encode(_vehicle->id(), MAV_COMP_ID_AUTOPILOT1, &message, &namedValue);
-    _vehicle->sendMessageOnLinkThreadSafe(&message);
+    mavlink_msg_serial_control_encode(_vehicle->id(), MAV_COMP_ID_AUTOPILOT1, &message, &serialControl);
+    _vehicle->sendMessageOnLink(_vehicle->priorityLink(), message);
 
-    qCDebug(UTGManagerLog) << "Sent MAVLink data:" << data.size() << "bytes";
+    qCDebug(UTGManagerLog) << "Sent MAVLink SERIAL_CONTROL data:" << data.size() << "bytes";
 }
 
 void UTGManager::_handleMAVLinkMessage(const mavlink_message_t& message)
 {
-    if (message.msgid == MAVLINK_MSG_ID_NAMED_VALUE_BYTES) {
-        mavlink_named_value_bytes_t namedValue;
-        mavlink_msg_named_value_bytes_decode(&message, &namedValue);
+    if (message.msgid == MAVLINK_MSG_ID_SERIAL_CONTROL) {
+        mavlink_serial_control_t serialControl;
+        mavlink_msg_serial_control_decode(&message, &serialControl);
 
-        if (strcmp(namedValue.name, "SERIAL_DATA") == 0) {
+        // Check if this is UTG data (using GPS1 device identifier)
+        if (serialControl.device == SERIAL_CONTROL_DEV_GPS1 &&
+            (serialControl.flags & SERIAL_CONTROL_FLAG_RESPOND) == 0) {
+
             // Process UTG data received from ArduPilot
-            QByteArray data(reinterpret_cast<const char*>(namedValue.data), namedValue.data_length);
+            QByteArray data(reinterpret_cast<const char*>(serialControl.data), serialControl.count);
             _receiveBuffer.append(data);
 
             // Process complete messages
@@ -586,7 +590,7 @@ void UTGManager::_handleMAVLinkMessage(const mavlink_message_t& message)
                 break; // Process one message at a time
             }
 
-            qCDebug(UTGManagerLog) << "Received MAVLink data:" << data.size() << "bytes";
+            qCDebug(UTGManagerLog) << "Received MAVLink SERIAL_CONTROL data:" << data.size() << "bytes";
         }
     }
 }
