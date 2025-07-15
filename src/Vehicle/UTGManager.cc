@@ -11,6 +11,7 @@
 #include "Vehicle.h"
 #include "QGCApplication.h"
 #include "SettingsManager.h"
+#include "QGC.h"
 #include <QDebug>
 
 Q_LOGGING_CATEGORY(UTGManagerLog, "UTGManagerLog")
@@ -117,7 +118,7 @@ void UTGManager::connectToUTG()
     
     qCDebug(UTGManagerLog) << "Attempting to connect to UTG";
     _setStatus(STATUS_CONNECTING);
-    _setupSerial();
+    _setupMAVLinkConnection();
 }
 
 void UTGManager::disconnectFromUTG()
@@ -128,7 +129,7 @@ void UTGManager::disconnectFromUTG()
     
     qCDebug(UTGManagerLog) << "Disconnecting from UTG";
     stopMeasurement();
-    _closeSerial();
+    _closeMAVLinkConnection();
     _setStatus(STATUS_DISCONNECTED);
     _connected = false;
     emit connectedChanged(_connected);
@@ -313,33 +314,14 @@ void UTGManager::getTemperature()
     _sendCommand(CMD_GET_TEMPERATURE);
 }
 
-void UTGManager::_onSerialDataReceived()
+void UTGManager::_onMAVLinkDataReceived()
 {
-    if (!_serialPort) return;
-
-    QByteArray data = _serialPort->readAll();
-    _receiveBuffer.append(data);
-
-    // Process complete messages
-    while (_receiveBuffer.size() >= 4) { // Minimum message size
-        _processReceivedData(_receiveBuffer);
-        break; // Process one message at a time
-    }
+    // This method is called periodically to check for MAVLink data
+    // The actual data processing happens in _handleMAVLinkMessage
+    // This is just a placeholder for the timer-based approach
 }
 
-void UTGManager::_onSerialError(QSerialPort::SerialPortError error)
-{
-    if (error == QSerialPort::NoError) return;
 
-    QString errorString = _serialPort ? _serialPort->errorString() : tr("Unknown error");
-    qCWarning(UTGManagerLog) << "Serial error:" << errorString;
-
-    _setError(errorString);
-    _setStatus(STATUS_ERROR);
-
-    // Try to reconnect after error
-    _connectionTimer->start(CONNECTION_RETRY_MS);
-}
 
 void UTGManager::_onConnectionTimer()
 {
@@ -373,75 +355,56 @@ void UTGManager::_processSettings()
     }
 }
 
-void UTGManager::_setupSerial()
+void UTGManager::_setupMAVLinkConnection()
 {
-    _closeSerial();
+    _closeMAVLinkConnection();
 
-    QString portName = _settings->serialPort()->rawValue().toString();
-    if (portName.isEmpty()) {
-        _setError(tr("No serial port configured"));
+    if (!_vehicle) {
+        _setError(tr("No vehicle available for MAVLink communication"));
         _setStatus(STATUS_ERROR);
         return;
     }
 
-    _serialPort = new QSerialPort(this);
-    _serialPort->setPortName(portName);
-    _serialPort->setBaudRate(_settings->baudRate()->rawValue().toInt());
-    _serialPort->setDataBits(static_cast<QSerialPort::DataBits>(_settings->dataBits()->rawValue().toInt()));
-    _serialPort->setStopBits(static_cast<QSerialPort::StopBits>(_settings->stopBits()->rawValue().toInt()));
-    _serialPort->setParity(static_cast<QSerialPort::Parity>(_settings->parity()->rawValue().toInt()));
-    _serialPort->setFlowControl(_settings->flowControl()->rawValue().toBool() ?
-                                QSerialPort::HardwareControl : QSerialPort::NoFlowControl);
+    // Start MAVLink data checking timer
+    _mavlinkCheckTimer->start();
 
-    connect(_serialPort, &QSerialPort::readyRead, this, &UTGManager::_onSerialDataReceived);
-    connect(_serialPort, QOverload<QSerialPort::SerialPortError>::of(&QSerialPort::error),
-            this, &UTGManager::_onSerialError);
+    _connected = true;
+    _setStatus(STATUS_CONNECTED);
+    emit connectedChanged(_connected);
 
-    if (_serialPort->open(QIODevice::ReadWrite)) {
-        _connected = true;
-        _setStatus(STATUS_CONNECTED);
-        emit connectedChanged(_connected);
+    // Initialize UTG with current settings
+    _updateSettings();
 
-        // Initialize UTG with current settings
-        _updateSettings();
-
-        qCDebug(UTGManagerLog) << "Connected to UTG on" << portName;
-    } else {
-        _setError(_serialPort->errorString());
-        _setStatus(STATUS_ERROR);
-        _connectionTimer->start(CONNECTION_RETRY_MS);
-        qCWarning(UTGManagerLog) << "Failed to open UTG port:" << _serialPort->errorString();
-    }
+    qCDebug(UTGManagerLog) << "Connected to UTG via MAVLink";
 }
 
-void UTGManager::_closeSerial()
+void UTGManager::_closeMAVLinkConnection()
 {
-    if (_serialPort) {
-        _serialPort->close();
-        _serialPort->deleteLater();
-        _serialPort = nullptr;
-    }
+    // Stop MAVLink data checking timer
+    _mavlinkCheckTimer->stop();
+
     _receiveBuffer.clear();
+
+    _connected = false;
+    _setStatus(STATUS_DISCONNECTED);
+    emit connectedChanged(_connected);
+
+    qCDebug(UTGManagerLog) << "Disconnected from UTG MAVLink";
 }
 
 void UTGManager::_sendCommand(UTGCommand cmd, const QByteArray& data)
 {
-    if (!_serialPort || !_serialPort->isOpen()) {
-        qCWarning(UTGManagerLog) << "Cannot send command: serial port not open";
+    if (!_connected || !_vehicle) {
+        qCWarning(UTGManagerLog) << "Cannot send command: not connected to vehicle";
         return;
     }
 
     QMutexLocker locker(&_commandMutex);
 
     QByteArray command = _buildCommand(cmd, data);
-    qint64 written = _serialPort->write(command);
+    _sendMAVLinkData(command);
 
-    if (written != command.size()) {
-        qCWarning(UTGManagerLog) << "Failed to write complete command";
-        _setError(tr("Communication error"));
-    } else {
-        qCDebug(UTGManagerLog) << "Sent command:" << QString::number(cmd, 16) << "data size:" << data.size();
-    }
+    qCDebug(UTGManagerLog) << "Sent command:" << QString::number(cmd, 16) << "data size:" << data.size();
 }
 
 void UTGManager::_processReceivedData(const QByteArray& data)
@@ -581,4 +544,49 @@ QByteArray UTGManager::_buildCommand(UTGCommand cmd, const QByteArray& data)
 bool UTGManager::_validateResponse(const QByteArray& response)
 {
     return response.size() >= 4 && static_cast<unsigned char>(response[0]) == 0xAA;
+}
+
+void UTGManager::_sendMAVLinkData(const QByteArray& data)
+{
+    if (!_vehicle || data.size() > 250) {  // MAVLink named value bytes limit
+        qCWarning(UTGManagerLog) << "Cannot send MAVLink data: invalid vehicle or data too large";
+        return;
+    }
+
+    // Send data via MAVLink named value bytes message
+    // This will be sent as "SERIAL_CMD" to match the ArduPilot script
+    mavlink_message_t message;
+    mavlink_named_value_bytes_t namedValue;
+
+    strncpy(namedValue.name, "SERIAL_CMD", 10);
+    namedValue.data_length = data.size();
+    memcpy(namedValue.data, data.constData(), data.size());
+    namedValue.time_boot_ms = QGC::groundTimeMilliseconds();
+
+    mavlink_msg_named_value_bytes_encode(_vehicle->id(), MAV_COMP_ID_AUTOPILOT1, &message, &namedValue);
+    _vehicle->sendMessageOnLinkThreadSafe(&message);
+
+    qCDebug(UTGManagerLog) << "Sent MAVLink data:" << data.size() << "bytes";
+}
+
+void UTGManager::_handleMAVLinkMessage(const mavlink_message_t& message)
+{
+    if (message.msgid == MAVLINK_MSG_ID_NAMED_VALUE_BYTES) {
+        mavlink_named_value_bytes_t namedValue;
+        mavlink_msg_named_value_bytes_decode(&message, &namedValue);
+
+        if (strcmp(namedValue.name, "SERIAL_DATA") == 0) {
+            // Process UTG data received from ArduPilot
+            QByteArray data(reinterpret_cast<const char*>(namedValue.data), namedValue.data_length);
+            _receiveBuffer.append(data);
+
+            // Process complete messages
+            while (_receiveBuffer.size() >= 4) { // Minimum message size
+                _processReceivedData(_receiveBuffer);
+                break; // Process one message at a time
+            }
+
+            qCDebug(UTGManagerLog) << "Received MAVLink data:" << data.size() << "bytes";
+        }
+    }
 }
