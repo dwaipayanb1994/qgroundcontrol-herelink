@@ -11,5 +11,6 @@
         <file alias="UTGStatusPanel.qml">../src/ui/qml/UTGStatusPanel.qml</file>
         <file alias="UTGSettingsPanel.qml">../src/ui/qml/UTGSettingsPanel.qml</file>
         <file alias="UTGReadingListPanel.qml">../src/ui/qml/UTGReadingListPanel.qml</file>
+        <file alias="CameraControlPanel.qml">src/ui/qml/CameraControlPanel.qml</file>
     </qresource>
 </RCC>

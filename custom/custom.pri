@@ -58,9 +58,19 @@ QML_IMPORT_PATH += \
 # Our own, custom sources
 SOURCES += \
     $$PWD/src/CustomPlugin.cc \
+    $$PWD/src/camera/CameraCommandDefinition.cpp \
+    $$PWD/src/camera/CameraCommandRegistry.cpp \
+    $$PWD/src/camera/CameraController.cpp \
+    $$PWD/src/camera/CameraProtocol.cpp \
+    $$PWD/src/camera/CameraTransport.cpp
 
 HEADERS += \
     $$PWD/src/CustomPlugin.h \
+    $$PWD/src/camera/CameraCommandDefinition.h \
+    $$PWD/src/camera/CameraCommandRegistry.h \
+    $$PWD/src/camera/CameraController.h \
+    $$PWD/src/camera/CameraProtocol.h \
+    $$PWD/src/camera/CameraTransport.h
 
 INCLUDEPATH += \
     $$PWD/src \

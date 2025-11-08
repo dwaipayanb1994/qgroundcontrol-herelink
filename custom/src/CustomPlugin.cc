@@ -18,6 +18,8 @@
 
 #include "CustomPlugin.h"
 
+#include "camera/CameraController.h"
+
 #include "MultiVehicleManager.h"
 #include "QGCApplication.h"
 #include "SettingsManager.h"
@@ -37,6 +39,11 @@ CustomOptions::CustomOptions(CustomPlugin*, QObject* parent)
 CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     : QGCCorePlugin(app, toolbox)
 {
+    static bool cameraTypesRegistered = false;
+    if (!cameraTypesRegistered) {
+        qmlRegisterType<CameraController>("Custom.Camera", 1, 0, "CameraController");
+        cameraTypesRegistered = true;
+    }
     qCDebug(CustomLog) << "=== CUSTOM PLUGIN CONSTRUCTOR CALLED ===";
     qWarning() << "CUSTOM PLUGIN: Constructor called - plugin is loading!";
     _pOptions = new CustomOptions(this, this);
@@ -74,8 +81,14 @@ CustomPlugin::settingsPages()
                                 QUrl::fromUserInput("qrc:/res/gear-white.svg"),
                                 this)));
 
-        qCDebug(CustomLog) << "Added UTG Control, total settings pages:" << _customSettingsList.count();
-        qWarning() << "CUSTOM PLUGIN: UTG Control added to settings menu";
+        _customSettingsList.append(QVariant::fromValue(
+            new QmlComponentInfo(tr("Topotek Camera"),
+                                QUrl::fromUserInput("qrc:/qml/CameraControlPanel.qml"),
+                                QUrl(),
+                                this)));
+
+        qCDebug(CustomLog) << "Added UTG and Camera panels, total settings pages:" << _customSettingsList.count();
+        qWarning() << "CUSTOM PLUGIN: UTG and Camera panels added to settings menu";
     }
 
     qCDebug(CustomLog) << "Returning" << _customSettingsList.count() << "settings pages";
