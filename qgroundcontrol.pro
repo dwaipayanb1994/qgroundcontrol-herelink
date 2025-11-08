@@ -680,7 +680,10 @@ HEADERS += \
     src/Vehicle/MAVLinkLogManager.h \
     src/Vehicle/MultiVehicleManager.h \
     src/Vehicle/TrajectoryPoints.h \
+    src/Vehicle/UTGCommunication.h \
     src/Vehicle/UTGManager.h \
+    src/Vehicle/UTGReading.h \
+    src/Vehicle/UTGReadingManager.h \
     src/Vehicle/Vehicle.h \
     src/Vehicle/VehicleObjectAvoidance.h \
     src/VehicleSetup/JoystickConfigController.h \
@@ -887,7 +890,10 @@ SOURCES += \
     src/Vehicle/MAVLinkLogManager.cc \
     src/Vehicle/MultiVehicleManager.cc \
     src/Vehicle/TrajectoryPoints.cc \
+    src/Vehicle/UTGCommunication.cc \
     src/Vehicle/UTGManager.cc \
+    src/Vehicle/UTGReading.cc \
+    src/Vehicle/UTGReadingManager.cc \
     src/Vehicle/Vehicle.cc \
     src/Vehicle/VehicleObjectAvoidance.cc \
     src/VehicleSetup/JoystickConfigController.cc \

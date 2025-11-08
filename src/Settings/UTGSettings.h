@@ -37,6 +37,7 @@ public:
     DEFINE_SETTINGFACT(autoConnect)
     DEFINE_SETTINGFACT(measurementUnit)
     DEFINE_SETTINGFACT(measurementMode)
+    DEFINE_SETTINGFACT(probeModel)
     DEFINE_SETTINGFACT(soundVelocity)
     DEFINE_SETTINGFACT(zeroOffset)
     DEFINE_SETTINGFACT(gain)

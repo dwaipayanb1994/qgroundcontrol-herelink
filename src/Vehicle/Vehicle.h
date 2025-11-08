@@ -40,6 +40,7 @@ class Joystick;
 class VehicleObjectAvoidance;
 class TrajectoryPoints;
 class UTGManager;
+class UTGCommunication;
 
 #if defined(QGC_AIRMAP_ENABLED)
 class AirspaceVehicleManager;
@@ -654,6 +655,7 @@ public:
     Q_PROPERTY(ParameterManager*        parameterManager    READ parameterManager   CONSTANT)
     Q_PROPERTY(VehicleObjectAvoidance*  objectAvoidance     READ objectAvoidance    CONSTANT)
     Q_PROPERTY(UTGManager*              utgManager          READ utgManager         CONSTANT)
+    Q_PROPERTY(UTGCommunication*        utgCommunication    READ utgCommunication   CONSTANT)
 
     // FactGroup object model properties
 
@@ -1006,6 +1008,7 @@ public:
     ParameterManager*       parameterManager() const { return _parameterManager; }
     VehicleObjectAvoidance* objectAvoidance()  { return _objectAvoidance; }
     UTGManager*             utgManager()       { return _utgManager; }
+    UTGCommunication*       utgCommunication() { return _utgCommunication; }
 
     static const int cMaxRcChannels = 18;
 
@@ -1467,6 +1470,7 @@ private:
     ParameterManager*       _parameterManager   = nullptr;
     VehicleObjectAvoidance* _objectAvoidance    = nullptr;
     UTGManager*             _utgManager         = nullptr;
+    UTGCommunication*       _utgCommunication   = nullptr;
 
 #if defined(QGC_AIRMAP_ENABLED)
     AirspaceVehicleManager* _airspaceVehicleManager;

@@ -22,6 +22,14 @@ add_library(Vehicle
 	UTGManagerTest.h
 	UTGIntegrationTest.cc
 	UTGIntegrationTest.h
+	UTGCommunication.cc
+	UTGCommunication.h
+	UTGCommunicationTest.cc
+	UTGCommunicationTest.h
+	UTGReading.cc
+	UTGReading.h
+	UTGReadingManager.cc
+	UTGReadingManager.h
 	Vehicle.cc
 	Vehicle.h
 	VehicleObjectAvoidance.cc

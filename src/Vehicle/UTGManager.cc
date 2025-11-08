@@ -59,7 +59,6 @@ UTGManager::UTGManager(Vehicle* vehicle, QObject* parent)
     if (_vehicle) {
         connect(_vehicle, &Vehicle::mavlinkMessageReceived, this, &UTGManager::_handleMAVLinkMessage);
         connect(_vehicle, &Vehicle::connectionLostChanged, this, &UTGManager::_onVehicleConnectionChanged);
-        connect(_vehicle, &Vehicle::communicationLostChanged, this, &UTGManager::_onVehicleConnectionChanged);
     }
     
     // Initial settings processing
@@ -608,7 +607,7 @@ void UTGManager::_onVehicleConnectionChanged()
 {
     if (!_vehicle) return;
 
-    if (_vehicle->connectionLost() || _vehicle->communicationLost()) {
+    if (_vehicle->connectionLost()) {
         if (_connected) {
             qCDebug(UTGManagerLog) << "Vehicle connection lost, disconnecting UTG";
             _closeMAVLinkConnection();

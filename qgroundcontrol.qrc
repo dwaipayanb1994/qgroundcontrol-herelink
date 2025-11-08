@@ -237,6 +237,7 @@
         <file alias="test.qml">src/test.qml</file>
         <file alias="UdpSettings.qml">src/ui/preferences/UdpSettings.qml</file>
         <file alias="UTGSettings.qml">src/ui/preferences/UTGSettings.qml</file>
+        <file alias="UTGReadingListPanel.qml">src/ui/qml/UTGReadingListPanel.qml</file>
         <file alias="ValuePageWidget.qml">src/FlightMap/Widgets/ValuePageWidget.qml</file>
         <file alias="VehicleSummary.qml">src/VehicleSetup/VehicleSummary.qml</file>
         <file alias="VibrationPageWidget.qml">src/FlightMap/Widgets/VibrationPageWidget.qml</file>

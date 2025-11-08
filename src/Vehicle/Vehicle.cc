@@ -45,6 +45,7 @@
 #include "VehicleObjectAvoidance.h"
 #include "TrajectoryPoints.h"
 #include "UTGManager.h"
+#include "UTGCommunication.h"
 #include "QGCGeo.h"
 
 #if defined(QGC_AIRMAP_ENABLED)
@@ -458,6 +459,7 @@ void Vehicle::_commonInit()
     _objectAvoidance = new VehicleObjectAvoidance(this, this);
 
     _utgManager = new UTGManager(this, this);
+    _utgCommunication = new UTGCommunication(this, this);
 
     // GeoFenceManager needs to access ParameterManager so make sure to create after
     _geoFenceManager = new GeoFenceManager(this);

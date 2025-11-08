@@ -47,6 +47,7 @@ public:
     QGCOptions*             options                         () final;
     QQmlApplicationEngine*  createRootWindow                (QObject* parent) final;
     void                    paletteOverride                 (QString colorName, QGCPalette::PaletteColorInfo_t& colorInfo) final;
+    QVariantList&           settingsPages                   () final;
 
     const static QColor     _windowShadeEnabledLightColor;
     const static QColor     _windowShadeEnabledDarkColor;
@@ -57,13 +58,12 @@ private:
     Q_PROPERTY(int    connectContext            READ connectContext)
     Q_PROPERTY(QColor getBorderColor            READ getBorderColor             WRITE setBorderColor        NOTIFY readingUpdated)
 
-    //QFile _test;
-
     bool isThicknessReadingEnabled = false;
     float thicknessReading = 0.0;
     QColor borderColor = QColor(0, 0, 0, 0);
 
     CustomOptions* _pOptions = nullptr;
+    QVariantList   _customSettingsList;
 
     Vehicle* activeVehicle = nullptr;
 
@@ -75,9 +75,6 @@ private:
     QColor getBorderColor();
     void setBorderColor(QColor color);
     void onParameterReadyVehicleAvailable();
-
-    // void _initializeThicknessCsv();
-    // void _writeThicknessCsvLine(float thicknessReading, float altitude = 0.0f);
 
 private slots:
     void onThicknessReadingChange(float);

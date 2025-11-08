@@ -68,8 +68,8 @@
     "shortDescription": "Measurement Unit",
     "longDescription":  "Unit for thickness measurements",
     "type":             "uint32",
-    "enumStrings":      "mm,inch,mil",
-    "enumValues":       "0,1,2",
+    "enumStrings":      "mm,inch",
+    "enumValues":       "0,1",
     "defaultValue":     0
 },
 {
@@ -79,6 +79,15 @@
     "type":             "uint32",
     "enumStrings":      "Pulse-Echo,Through-Transmission,Echo-Echo",
     "enumValues":       "0,1,2",
+    "defaultValue":     0
+},
+{
+    "name":             "probeModel",
+    "shortDescription": "Probe Model",
+    "longDescription":  "UTG probe model selection",
+    "type":             "uint32",
+    "enumStrings":      "P5EE,N05,N07,HT5,N02",
+    "enumValues":       "0,1,2,3,4",
     "defaultValue":     0
 },
 {

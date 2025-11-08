@@ -37,7 +37,11 @@ CustomOptions::CustomOptions(CustomPlugin*, QObject* parent)
 CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     : QGCCorePlugin(app, toolbox)
 {
+    qCDebug(CustomLog) << "=== CUSTOM PLUGIN CONSTRUCTOR CALLED ===";
+    qWarning() << "CUSTOM PLUGIN: Constructor called - plugin is loading!";
     _pOptions = new CustomOptions(this, this);
+    qCDebug(CustomLog) << "Custom plugin initialized successfully";
+    qWarning() << "CUSTOM PLUGIN: Initialization complete";
 }
 
 //-----------------------------------------------------------------------------
@@ -50,6 +54,32 @@ QGCOptions*
 CustomPlugin::options()
 {
     return _pOptions;
+}
+
+//-----------------------------------------------------------------------------
+QVariantList&
+CustomPlugin::settingsPages()
+{
+    qCDebug(CustomLog) << "=== CUSTOM PLUGIN SETTINGS PAGES CALLED ===";
+    qWarning() << "CUSTOM PLUGIN: settingsPages() called - adding UTG Control";
+
+    if(!_customSettingsList.count()) {
+        _customSettingsList = QGCCorePlugin::settingsPages();
+        qCDebug(CustomLog) << "Base settings pages count:" << _customSettingsList.count();
+
+        // Add UTG Panel to settings
+        _customSettingsList.append(QVariant::fromValue(
+            new QmlComponentInfo(tr("UTG Control"),
+                                QUrl::fromUserInput("qrc:/qml/UTGPanel.qml"),
+                                QUrl::fromUserInput("qrc:/res/gear-white.svg"),
+                                this)));
+
+        qCDebug(CustomLog) << "Added UTG Control, total settings pages:" << _customSettingsList.count();
+        qWarning() << "CUSTOM PLUGIN: UTG Control added to settings menu";
+    }
+
+    qCDebug(CustomLog) << "Returning" << _customSettingsList.count() << "settings pages";
+    return _customSettingsList;
 }
 
 //-----------------------------------------------------------------------------
@@ -69,10 +99,9 @@ CustomPlugin::createRootWindow(QObject *parent)
 
 int CustomPlugin::connectContext()
 {
-    qCDebug(VehicleLog) << "DBDB CONNECT";
+    qCDebug(VehicleLog) << "Custom plugin connecting to vehicle context";
     activeVehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     connect(activeVehicle, &Vehicle::thicknessReadingChanged, this, &CustomPlugin::onThicknessReadingChange);
-    //connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::parameterReadyVehicleAvailableChanged, this, &CustomPlugin::onParameterReadyVehicleAvailable);
     onParameterReadyVehicleAvailable();
     return 0;
 }
@@ -91,14 +120,13 @@ void CustomPlugin::onThicknessReadingChange(float thicknessReading)
 
 void CustomPlugin::onParameterReadyVehicleAvailable()
 {
-    qCDebug(VehicleLog) << "DBDB PARAM AV";
+    qCDebug(VehicleLog) << "Checking for thickness gauge parameter support";
     setThicknessGaugeEnabled(false);
-    //-- Is there support for thickness gauge?
+    // Check if vehicle supports thickness gauge via STS_ENABLE parameter
     if (activeVehicle->parameterManager()->parameterExists(activeVehicle->id(), "STS_ENABLE")) {
-        qCDebug(VehicleLog) << "DBDB THICKNESS ENABLED";
+        qCDebug(VehicleLog) << "Thickness gauge parameter found - enabling";
         setThicknessGaugeEnabled(true);
     }
-    else { qCDebug(VehicleLog) << "DBDB THICKNESS NOT ENABLED"; }
 }
 
 float CustomPlugin::getThicknessReading()
@@ -337,48 +365,3 @@ CustomOptions::toolbarBackgroundDark() const
 {
     return CustomPlugin::_windowShadeEnabledDarkColor;
 }
-
-// void CustomPlugin::_initializeThicknessCsv()
-// {
-//     QString now = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
-//     QString fileName = QString("%1 thickness readings%2.csv").arg(now).arg(activeVehicle->id());
-//     QDir saveDir(_toolbox->settingsManager()->appSettings()->telemetrySavePath());
-//     _csvThicknessLogFile.setFileName(saveDir.absoluteFilePath(fileName));
-
-//     if (!_csvThicknessLogFile.open(QIODevice::Append)) {
-//         qCWarning(VehicleLog) << "Unable to open file for thickness data csv logging, Stopping csv logging!";
-//         return;
-//     }
-
-//     QTextStream stream(&_csvThicknessLogFile);
-//     QStringList thicknessReadings;
-//     thicknessReadings << "THICKNESS READINGS";
-//     // for (const QString& groupName: factGroupNames()) {
-//     //     for(const QString& factName: getFactGroup(groupName)->factNames()){
-//     //         allFactNames << QString("%1.%2").arg(groupName, factName);
-//     //     }
-//     // }
-//     qCDebug(VehicleLog) << "Thickness readings csv opened";
-//     stream << "Timestamp," << thicknessReadings.join(",") << "\n";
-// }
-
-// void CustomPlugin::_writeThicknessCsvLine(float thicknessReading, float altitude)
-// {
-//     // Only save the logs after the the vehicle gets armed, unless "Save logs even if vehicle was not armed" is checked
-//     if(!_csvThicknessLogFile.isOpen() &&
-//            ((activeVehicle && activeVehicle->armed()) || _toolbox->settingsManager()->appSettings()->telemetrySaveNotArmed()->rawValue().toBool())){
-//         _initializeThicknessCsv();
-//     }
-
-//     if(!_csvThicknessLogFile.isOpen()){
-//         return;
-//     }
-
-//     QStringList thicknessReadingEntry;
-//     QTextStream stream(&_csvThicknessLogFile);
-
-//     // Write timestamp to csv file
-//     thicknessReadingEntry << QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd hh:mm:ss.zzz")) << QString::number(altitude, 'f', 2) << QString::number(thicknessReading, 'f', 2);
-
-//     stream << thicknessReadingEntry.join(",") << "\n";
-// }
