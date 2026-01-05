@@ -39,6 +39,8 @@ class QGCCameraManager;
 class Joystick;
 class VehicleObjectAvoidance;
 class TrajectoryPoints;
+class UTGManager;
+class UTGCommunication;
 
 #if defined(QGC_AIRMAP_ENABLED)
 class AirspaceVehicleManager;
@@ -652,6 +654,8 @@ public:
 
     Q_PROPERTY(ParameterManager*        parameterManager    READ parameterManager   CONSTANT)
     Q_PROPERTY(VehicleObjectAvoidance*  objectAvoidance     READ objectAvoidance    CONSTANT)
+    Q_PROPERTY(UTGManager*              utgManager          READ utgManager         CONSTANT)
+    Q_PROPERTY(UTGCommunication*        utgCommunication    READ utgCommunication   CONSTANT)
 
     // FactGroup object model properties
 
@@ -1003,6 +1007,8 @@ public:
     ParameterManager*       parameterManager() { return _parameterManager; }
     ParameterManager*       parameterManager() const { return _parameterManager; }
     VehicleObjectAvoidance* objectAvoidance()  { return _objectAvoidance; }
+    UTGManager*             utgManager()       { return _utgManager; }
+    UTGCommunication*       utgCommunication() { return _utgCommunication; }
 
     static const int cMaxRcChannels = 18;
 
@@ -1198,6 +1204,9 @@ signals:
     void gitHashChanged                 (QString hash);
     void vehicleUIDChanged              ();
 
+    //Custom thickness reading
+    void thicknessReadingChanged        (float);
+
     /// New RC channel values
     ///     @param channelCount Number of available channels, cMaxRcChannels max
     ///     @param pwmValues -1 signals channel not available
@@ -1316,6 +1325,7 @@ private:
     void _handleGimbalOrientation       (const mavlink_message_t& message);
     void _handleObstacleDistance        (const mavlink_message_t& message);
     void _handleFenceStatus             (const mavlink_message_t& message);
+    void _handleThicknessReading        (const mavlink_message_t& message);
     // ArduPilot dialect messages
 #if !defined(NO_ARDUPILOT_DIALECT)
     void _handleCameraFeedback          (const mavlink_message_t& message);
@@ -1459,6 +1469,8 @@ private:
 
     ParameterManager*       _parameterManager   = nullptr;
     VehicleObjectAvoidance* _objectAvoidance    = nullptr;
+    UTGManager*             _utgManager         = nullptr;
+    UTGCommunication*       _utgCommunication   = nullptr;
 
 #if defined(QGC_AIRMAP_ENABLED)
     AirspaceVehicleManager* _airspaceVehicleManager;
