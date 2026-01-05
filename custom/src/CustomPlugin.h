@@ -48,6 +48,7 @@ public:
     QQmlApplicationEngine*  createRootWindow                (QObject* parent) final;
     void                    paletteOverride                 (QString colorName, QGCPalette::PaletteColorInfo_t& colorInfo) final;
     QVariantList&           settingsPages                   () final;
+    QVariantList&           instrumentPages                 () final;
 
     const static QColor     _windowShadeEnabledLightColor;
     const static QColor     _windowShadeEnabledDarkColor;

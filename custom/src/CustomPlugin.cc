@@ -41,7 +41,9 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
 {
     static bool cameraTypesRegistered = false;
     if (!cameraTypesRegistered) {
+        qWarning() << "CUSTOM CAMERA: Registering CameraController QML type";
         qmlRegisterType<CameraController>("Custom.Camera", 1, 0, "CameraController");
+        qWarning() << "CUSTOM CAMERA: CameraController QML type registered";
         cameraTypesRegistered = true;
     }
     qCDebug(CustomLog) << "=== CUSTOM PLUGIN CONSTRUCTOR CALLED ===";
@@ -86,6 +88,7 @@ CustomPlugin::settingsPages()
                                 QUrl::fromUserInput("qrc:/qml/CameraControlPanel.qml"),
                                 QUrl(),
                                 this)));
+        qWarning() << "CUSTOM CAMERA: Topotek Camera panel appended to settings";
 
         qCDebug(CustomLog) << "Added UTG and Camera panels, total settings pages:" << _customSettingsList.count();
         qWarning() << "CUSTOM PLUGIN: UTG and Camera panels added to settings menu";
@@ -93,6 +96,35 @@ CustomPlugin::settingsPages()
 
     qCDebug(CustomLog) << "Returning" << _customSettingsList.count() << "settings pages";
     return _customSettingsList;
+}
+
+//-----------------------------------------------------------------------------
+QVariantList&
+CustomPlugin::instrumentPages()
+{
+    // Get the base instrument pages from QGCCorePlugin
+    QVariantList& basePages = QGCCorePlugin::instrumentPages();
+    
+    // Find and replace the Camera page with our Topotek Camera Control Panel
+    for (int i = 0; i < basePages.count(); i++) {
+        QmlComponentInfo* info = qvariant_cast<QmlComponentInfo*>(basePages[i]);
+        if (info && info->title() == tr("Camera")) {
+            qCDebug(CustomLog) << "Replacing Camera page with Topotek Camera Control Panel";
+            // Create a new QmlComponentInfo with our custom panel URL
+            QmlComponentInfo* customCameraPage = new QmlComponentInfo(
+                tr("Camera"), 
+                QUrl::fromUserInput("qrc:/qml/CameraControlPanel.qml"),
+                QUrl(),
+                this
+            );
+            // Replace the Camera page in the list
+            basePages[i] = QVariant::fromValue(customCameraPage);
+            qWarning() << "CUSTOM CAMERA: Camera dropdown now shows Topotek Camera Control Panel";
+            break;
+        }
+    }
+    
+    return basePages;
 }
 
 //-----------------------------------------------------------------------------

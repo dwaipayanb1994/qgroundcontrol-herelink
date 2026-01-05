@@ -18,7 +18,7 @@ class CameraController : public QObject
     Q_PROPERTY(bool udpConnected READ udpConnected NOTIFY udpConnectionChanged)
     Q_PROPERTY(int activeTransportMode READ activeTransportMode WRITE setActiveTransportMode NOTIFY activeTransportModeChanged)
     Q_PROPERTY(QVariantList commandCatalog READ commandCatalog NOTIFY commandCatalogChanged)
-    Q_PROPERTY(QStringList logEntries READ logEntries NOTIFY logChanged)
+    Q_PROPERTY(QVariantList logEntries READ logEntries NOTIFY logChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY errorOccurred)
     Q_PROPERTY(QString lastFrame READ lastFrame NOTIFY lastFrameChanged)
 
@@ -40,7 +40,7 @@ public:
     void setActiveTransportMode(int mode);
 
     QVariantList commandCatalog() const { return _commandCatalog; }
-    QStringList logEntries() const { return _logEntries; }
+    QVariantList logEntries() const { return _logEntries; }
     QString lastError() const { return _lastError; }
     QString lastFrame() const { return _lastFrame; }
 
@@ -84,7 +84,7 @@ private:
 
     QVector<CameraCommandDefinition> _definitions;
     QVariantList _commandCatalog;
-    QStringList _logEntries;
+    QVariantList _logEntries;
     QString _lastError;
     QString _lastFrame;
 };
