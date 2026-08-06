@@ -34,7 +34,7 @@ void UTGIntegrationTest::init(void)
     _vehicle = vehicleMgr->activeVehicle();
     QVERIFY(_vehicle);
     
-    _utgManager = _vehicle->utgManager();
+    _utgManager = new UTGManager(_vehicle, this);
     QVERIFY(_utgManager);
     
     _utgSettings = qgcApp()->toolbox()->settingsManager()->utgSettings();
@@ -49,7 +49,9 @@ void UTGIntegrationTest::cleanup(void)
     _disconnectMockDevice();
     delete _mockDevice;
     _mockDevice = nullptr;
-    
+    delete _utgManager;
+    _utgManager = nullptr;
+
     _disconnectMockLink();
     UnitTest::cleanup();
 }

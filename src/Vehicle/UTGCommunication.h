@@ -196,6 +196,7 @@ private:
     void _applyMaterialVelocityPreset(int materialType);
     void _handleThicknessReading(double thickness, const QString& command);
     void _setContinuousMeasurement(bool measuring);
+    void _scheduleAutoConnectIfNeeded();
 
     // Member variables
     Vehicle* _vehicle;

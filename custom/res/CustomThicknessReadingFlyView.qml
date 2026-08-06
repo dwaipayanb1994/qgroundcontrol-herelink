@@ -19,8 +19,8 @@ Item {
     property real _currentThickness: _utgCommunication ? _utgCommunication.currentThickness : 0.0
     property bool _continuousMeasuring: _utgCommunication ? _utgCommunication.continuousMeasurement : false
 
-    property var _storedReadings: []
-    property int _readingCount: _storedReadings.length
+    property var _readingManager:   _utgCommunication ? _utgCommunication.readingManager : null
+    property int _readingCount:     _readingManager ? _readingManager.count : 0
     property string _currentZone: "Zone A"
     property int _zoneCounter: 1
     property string _pendingReadingNotes: ""
@@ -31,234 +31,6 @@ Item {
     property string _savedFirmwareVersion: ""
     property string _savedMcpLeverVersion: ""
     property string _savedSwid: ""
-    property string _savedReadingsData: ""
-
-    readonly property string _jsonFilePath: "/sdcard/UTG_Readings.json"
-    readonly property string _csvFilePath: "/sdcard/UTG_Readings.csv"
-
-    function _readingValue(reading) {
-        if (!reading) {
-            return 0
-        }
-        var value = parseFloat(reading.reading || reading.thickness || "0")
-        return isNaN(value) ? 0 : value
-    }
-
-    function _isValidThickness(thickness) {
-        var value = parseFloat(thickness)
-        return !isNaN(value) && value > 0 && value < 10000
-    }
-
-    function _sanitizeReadings(readings) {
-        var clean = []
-        for (var i = 0; i < readings.length; i++) {
-            if (_isValidThickness(_readingValue(readings[i]))) {
-                clean.push(readings[i])
-            }
-        }
-        return clean
-    }
-
-    function addNewReading(thickness, gpsLat, gpsLon, notes) {
-        if (!_isValidThickness(thickness)) {
-            return false
-        }
-
-        var newReading = {
-            datetime: new Date().toLocaleString(),
-            reading: parseFloat(thickness).toFixed(2),
-            gpsLocation: gpsLat + ", " + gpsLon,
-            notes: notes || ""
-        }
-        _storedReadings = _storedReadings.concat([newReading])
-        _readingCount = _storedReadings.length
-        saveToStorage()
-        return true
-    }
-
-    function autoSaveReading(thickness) {
-        if (!_isValidThickness(thickness)) {
-            return
-        }
-
-        var gpsLat = "0.0"
-        var gpsLon = "0.0"
-        if (_activeVehicle && _activeVehicle.coordinate.isValid) {
-            gpsLat = _activeVehicle.coordinate.latitude.toFixed(6)
-            gpsLon = _activeVehicle.coordinate.longitude.toFixed(6)
-        }
-
-        var zoneNote = _pendingReadingNotes || (_currentZone + " " + _zoneCounter)
-        _pendingReadingNotes = ""
-
-        if (addNewReading(thickness, gpsLat, gpsLon, zoneNote)) {
-            _zoneCounter++
-        }
-    }
-
-    function _convertReadingsToCSV(readings) {
-        try {
-            var csv = "Date/Time,Thickness (mm),GPS Latitude,GPS Longitude,Notes\n"
-            for (var i = 0; i < readings.length; i++) {
-                var reading = readings[i]
-                var gpsCoords = (reading.gpsLocation || "0.0, 0.0").split(", ")
-                var lat = gpsCoords[0] || "0.0"
-                var lon = gpsCoords[1] || "0.0"
-                var notes = reading.notes || ""
-                if (notes.indexOf(",") >= 0 || notes.indexOf("\"") >= 0) {
-                    notes = "\"" + notes.replace(/"/g, "\"\"") + "\""
-                }
-                csv += (reading.datetime || "") + "," +
-                       (reading.reading || reading.thickness || "") + "," +
-                       lat + "," +
-                       lon + "," +
-                       notes + "\n"
-            }
-            return csv
-        } catch (error) {
-            console.log("CSV conversion error:", error)
-            return ""
-        }
-    }
-
-    function _writeJSONFile(jsonData) {
-        console.log("Writing JSON file:", _jsonFilePath, "(" + jsonData.length, "bytes)")
-        try {
-            var request = new XMLHttpRequest()
-            request.open("PUT", "file://" + _jsonFilePath, false)
-            request.setRequestHeader("Content-Type", "application/json")
-            request.send(jsonData)
-
-            if (request.status === 0 || request.status === 200) {
-                console.log("JSON file write: SUCCESS")
-                return true
-            }
-            console.log("JSON file write: FAILED (status:", request.status + ")")
-            return false
-        } catch (error) {
-            console.log("JSON file write: ERROR -", error)
-            return false
-        }
-    }
-
-    function _writeCSVFile(csvData) {
-        console.log("Writing CSV file:", _csvFilePath, "(" + csvData.length, "bytes)")
-        try {
-            var request = new XMLHttpRequest()
-            request.open("PUT", "file://" + _csvFilePath, false)
-            request.setRequestHeader("Content-Type", "text/csv")
-            request.send(csvData)
-
-            if (request.status === 0 || request.status === 200) {
-                console.log("CSV file write: SUCCESS")
-                return true
-            }
-            console.log("CSV file write: FAILED (status:", request.status + ")")
-            return false
-        } catch (error) {
-            console.log("CSV file write: ERROR -", error)
-            return false
-        }
-    }
-
-    function _readJSONFile() {
-        console.log("Reading JSON file:", _jsonFilePath)
-        try {
-            var request = new XMLHttpRequest()
-            request.open("GET", "file://" + _jsonFilePath, false)
-            request.send()
-
-            if (request.status === 0 || request.status === 200) {
-                var data = request.responseText
-                if (data && data.length > 0) {
-                    console.log("JSON file read: SUCCESS (" + data.length, "bytes)")
-                    return data
-                }
-                console.log("JSON file read: EMPTY FILE")
-                return null
-            }
-            console.log("JSON file read: FAILED (status:", request.status + ")")
-            return null
-        } catch (error) {
-            console.log("JSON file read: ERROR -", error)
-            return null
-        }
-    }
-
-    function saveToStorage() {
-        try {
-            var readings = _sanitizeReadings(_storedReadings)
-            if (readings.length !== _storedReadings.length) {
-                _storedReadings = readings
-                _readingCount = readings.length
-            }
-
-            var jsonData = JSON.stringify({
-                readings: readings,
-                currentZone: _currentZone,
-                zoneCounter: _zoneCounter
-            })
-
-            _savedReadingsData = jsonData
-
-            var jsonWriteSuccess = _writeJSONFile(jsonData)
-            var csvWriteSuccess = _writeCSVFile(_convertReadingsToCSV(readings))
-
-            if (jsonWriteSuccess && csvWriteSuccess) {
-                console.log("SD card storage: SUCCESS (JSON + CSV)")
-            } else if (jsonWriteSuccess) {
-                console.log("SD card storage: PARTIAL (JSON only)")
-            } else {
-                console.log("SD card storage: FAILED")
-            }
-
-            return jsonWriteSuccess
-        } catch (error) {
-            console.log("Save to storage error:", error)
-            return false
-        }
-    }
-
-    function loadFromStorage() {
-        try {
-            var jsonData = _readJSONFile()
-            if (jsonData) {
-                var data = JSON.parse(jsonData)
-                if (data.readings) {
-                    _currentZone = data.currentZone || "Zone A"
-                    _zoneCounter = data.zoneCounter || 1
-                    var sanitized = _sanitizeReadings(data.readings)
-                    _storedReadings = sanitized
-                    _readingCount = _storedReadings.length
-                    _savedReadingsData = jsonData
-                    return sanitized.length !== data.readings.length
-                }
-            }
-
-            if (_savedReadingsData) {
-                var memData = JSON.parse(_savedReadingsData)
-                if (memData.readings) {
-                    _currentZone = memData.currentZone || "Zone A"
-                    _zoneCounter = memData.zoneCounter || 1
-                    var memSanitized = _sanitizeReadings(memData.readings)
-                    _storedReadings = memSanitized
-                    _readingCount = _storedReadings.length
-                    return memSanitized.length !== memData.readings.length
-                }
-            }
-        } catch (error) {
-            console.log("Load from storage error:", error)
-        }
-
-        return false
-    }
-
-    function loadStoredReadings() {
-        if (loadFromStorage()) {
-            saveToStorage()
-        }
-        updateZoneCounter()
-    }
 
     function getAllDeviceInformation() {
         if (!_utgCommunication || !_utgConnected) {
@@ -283,9 +55,12 @@ Item {
     }
 
     function updateZoneCounter() {
+        if (!_readingManager) {
+            return
+        }
         var maxCounter = 0
-        for (var i = 0; i < _storedReadings.length; i++) {
-            var note = _storedReadings[i].notes
+        for (var i = 0; i < _readingManager.count; i++) {
+            var note = _readingManager.notesAt(i)
             if (note && note.indexOf(_currentZone) === 0) {
                 var parts = note.split(" ")
                 if (parts.length >= 3) {
@@ -300,37 +75,35 @@ Item {
     }
 
     function deleteReading(index) {
-        if (index >= 0 && index < _storedReadings.length) {
-            var newReadings = []
-            for (var i = 0; i < _storedReadings.length; i++) {
-                if (i !== index) {
-                    newReadings.push(_storedReadings[i])
-                }
-            }
-            _storedReadings = newReadings
-            _readingCount = _storedReadings.length
-            saveToStorage()
+        if (_readingManager) {
+            _readingManager.removeReading(index)
+            updateZoneCounter()
         }
     }
 
     function clearAllReadings() {
-        _storedReadings = []
-        _readingCount = 0
+        if (_readingManager) {
+            _readingManager.clearAll()
+        }
         _zoneCounter = 1
-        saveToStorage()
+    }
+
+    Connections {
+        target: _readingManager
+        onReadingsLoaded: updateZoneCounter()
+    }
+
+    Connections {
+        target: QGroundControl.multiVehicleManager
+        onActiveVehicleChanged: updateZoneCounter()
     }
 
     Connections {
         target: _utgCommunication
-        onMeasurementReceived: {
-            if (thickness > 0) {
-                autoSaveReading(thickness)
-            }
-        }
+        onReadingSaved: updateZoneCounter()
         onConnectionStatusChanged: {
             if (_utgCommunication && _utgCommunication.connected) {
                 saveDeviceInformation()
-                loadStoredReadings()
             }
         }
     }
@@ -344,11 +117,6 @@ Item {
     QGCPalette { id: qgcPal }
 
     visible: _utgEnabled
-
-    Component.onCompleted: {
-        loadStoredReadings()
-        updateZoneCounter()
-    }
 
     // Function to save device information to persistent storage
     function saveDeviceInformation() {
@@ -1284,11 +1052,7 @@ Item {
         // Prevent any parent-level transitions from affecting this overlay
         layer.enabled: false
 
-        onVisibleChanged: {
-            if (visible) {
-                loadStoredReadings()
-            }
-        }
+        // Readings are loaded asynchronously when the vehicle connects.
 
         // Handle back key/escape
         Keys.onPressed: {
@@ -1401,7 +1165,7 @@ Item {
                     }
 
                     Item {
-                        width: parent.width * 0.20
+                        width: parent.width * 0.18
                         height: parent.height
 
                         QGCLabel {
@@ -1415,7 +1179,22 @@ Item {
                     }
 
                     Item {
-                        width: parent.width * 0.35
+                        width: parent.width * 0.10
+                        height: parent.height
+
+                        QGCLabel {
+                            anchors.fill: parent
+                            anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 0.25
+                            anchors.rightMargin: ScreenTools.defaultFontPixelWidth * 0.25
+                            text: qsTr("Height")
+                            font.bold: true
+                            verticalAlignment: Text.AlignVCenter
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+                    }
+
+                    Item {
+                        width: parent.width * 0.27
                         height: parent.height
 
                         QGCLabel {
@@ -1452,7 +1231,7 @@ Item {
 
                 ListView {
                     id: readingsListView
-                    model: _storedReadings
+                    model: _readingManager
 
                     delegate: Rectangle {
                         width: readingsListView.width
@@ -1473,7 +1252,7 @@ Item {
                                     anchors.fill: parent
                                     anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 0.5
                                     anchors.rightMargin: ScreenTools.defaultFontPixelWidth * 0.25
-                                    text: modelData.datetime
+                                    text: datetime
                                     verticalAlignment: Text.AlignVCenter
                                     wrapMode: Text.WordWrap
                                     font.pointSize: ScreenTools.smallFontPointSize
@@ -1488,21 +1267,21 @@ Item {
                                     anchors.fill: parent
                                     anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 0.25
                                     anchors.rightMargin: ScreenTools.defaultFontPixelWidth * 0.25
-                                    text: modelData.reading
+                                    text: reading
                                     verticalAlignment: Text.AlignVCenter
                                     horizontalAlignment: Text.AlignHCenter
                                 }
                             }
 
                             Item {
-                                width: parent.width * 0.20
+                                width: parent.width * 0.18
                                 height: parent.height
 
                                 QGCLabel {
                                     anchors.fill: parent
                                     anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 0.25
                                     anchors.rightMargin: ScreenTools.defaultFontPixelWidth * 0.25
-                                    text: modelData.gpsLocation
+                                    text: gpsLocation
                                     verticalAlignment: Text.AlignVCenter
                                     wrapMode: Text.WordWrap
                                     font.pointSize: ScreenTools.smallFontPointSize
@@ -1510,7 +1289,22 @@ Item {
                             }
 
                             Item {
-                                width: parent.width * 0.35
+                                width: parent.width * 0.10
+                                height: parent.height
+
+                                QGCLabel {
+                                    anchors.fill: parent
+                                    anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 0.25
+                                    anchors.rightMargin: ScreenTools.defaultFontPixelWidth * 0.25
+                                    text: altitude
+                                    verticalAlignment: Text.AlignVCenter
+                                    horizontalAlignment: Text.AlignHCenter
+                                    font.pointSize: ScreenTools.smallFontPointSize
+                                }
+                            }
+
+                            Item {
+                                width: parent.width * 0.27
                                 height: parent.height
 
                                 QGCTextField {
@@ -1520,11 +1314,12 @@ Item {
                                     anchors.rightMargin: ScreenTools.defaultFontPixelWidth * 0.25
                                     anchors.topMargin: ScreenTools.defaultFontPixelWidth * 0.25
                                     anchors.bottomMargin: ScreenTools.defaultFontPixelWidth * 0.25
-                                    text: modelData.notes
+                                    text: notes
                                     placeholderText: qsTr("Enter notes...")
                                     onEditingFinished: {
-                                        modelData.notes = text
-                                        saveToStorage()
+                                        if (_readingManager) {
+                                            _readingManager.setNotes(index, text)
+                                        }
                                     }
                                 }
                             }
@@ -1544,7 +1339,6 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     anchors.horizontalCenter: parent.horizontalCenter
 
-                                    // Drop shadow effect
                                     Rectangle {
                                         width: parent.width
                                         height: parent.height
@@ -1557,7 +1351,6 @@ Item {
                                         anchors.margins: 1
                                     }
 
-                                    // Draw X using two rectangles
                                     Rectangle {
                                         width: deleteButton.width * 0.6
                                         height: 2
@@ -1647,9 +1440,11 @@ Item {
                         anchors.right: parent.right
                         anchors.rightMargin: ScreenTools.defaultFontPixelWidth * 0.5
                         anchors.verticalCenter: parent.verticalCenter
-                        enabled: true
+                        enabled: _readingManager && !_readingManager.loading
                         onClicked: {
-                            loadStoredReadings()
+                            if (_readingManager) {
+                                _readingManager.reloadAsync()
+                            }
                         }
                     }
                 }

@@ -56,6 +56,7 @@ UTGCommunication::UTGCommunication(Vehicle* vehicle, QObject* parent)
     , _pendingVelocity(-1.0)
 {
     _readingManager->setVehicle(_vehicle);
+    _readingManager->reloadAsync();
 
     qCDebug(UTGCommunicationLog) << "UTGCommunication created for vehicle" << (_vehicle ? _vehicle->id() : -1);
 
@@ -124,11 +125,26 @@ UTGCommunication::UTGCommunication(Vehicle* vehicle, QObject* parent)
                 });
         connect(_vehicle, &Vehicle::connectionLostChanged, this, &UTGCommunication::_onVehicleConnectionChanged);
 
-        // Auto-connect if enabled in settings
-        if (_settings && _settings->autoConnect()->rawValue().toBool()) {
-            QTimer::singleShot(5000, this, &UTGCommunication::connectToUTG); // Longer delay for stable connection
-        }
+        _scheduleAutoConnectIfNeeded();
     }
+}
+
+void UTGCommunication::_scheduleAutoConnectIfNeeded()
+{
+    if (!_settings || !_settings->autoConnect()->rawValue().toBool() || _connected) {
+        return;
+    }
+
+    if (!_vehicle || _vehicle->connectionLost() || !_vehicle->priorityLink()) {
+        return;
+    }
+
+    QTimer::singleShot(2000, this, [this]() {
+        if (_vehicle && !_vehicle->connectionLost() && !_connected &&
+            _settings && _settings->autoConnect()->rawValue().toBool()) {
+            connectToUTG();
+        }
+    });
 }
 
 UTGCommunication::~UTGCommunication()
@@ -480,33 +496,29 @@ void UTGCommunication::handleStatusTextMessage(const mavlink_message_t& message)
 
     qCDebug(UTGCommunicationLog) << "STATUSTEXT received:" << text;
 
-    // Log ALL STATUSTEXT messages for debugging
-    _addToCommandLog(QString("STATUSTEXT: %1").arg(text));
-
-    // Log all UTG-related messages for debugging
-    if (text.contains("UTG")) {
-        _addToCommandLog(QString("UTG DEBUG: %1").arg(text));
-    }
-
     // Check for UTG responses with "UTG_RESPONSE: " prefix
     if (text.startsWith("UTG_RESPONSE: ")) {
+        _addToCommandLog(QString("← %1").arg(text.mid(14)));
         QString response = text.mid(14); // Remove "UTG_RESPONSE: " prefix
         if (!response.isEmpty()) {
             qCDebug(UTGCommunicationLog) << "Processing UTG response:" << response;
-            _addToCommandLog(QString("← %1").arg(response));
             _processResponse(response);
         }
     }
     // Also check for debug messages that might contain UTG responses
-    else if (text.contains("UTG: Parsed UTG response:")) {
-        // Extract response from debug message: "DBDB UTG: Parsed UTG response: 'I3 A 1.35I IDUT0001'"
-        int startPos = text.indexOf("'") + 1;
-        int endPos = text.lastIndexOf("'");
-        if (startPos > 0 && endPos > startPos) {
-            QString response = text.mid(startPos, endPos - startPos);
-            qCDebug(UTGCommunicationLog) << "Processing UTG response from debug:" << response;
-            _addToCommandLog(QString("← %1").arg(response));
-            _processResponse(response);
+    else if (text.contains("UTG")) {
+        if (text.contains("UTG: Parsed UTG response:")) {
+            // Extract response from debug message: "DBDB UTG: Parsed UTG response: 'I3 A 1.35I IDUT0001'"
+            int startPos = text.indexOf("'") + 1;
+            int endPos = text.lastIndexOf("'");
+            if (startPos > 0 && endPos > startPos) {
+                QString response = text.mid(startPos, endPos - startPos);
+                qCDebug(UTGCommunicationLog) << "Processing UTG response from debug:" << response;
+                _addToCommandLog(QString("← %1").arg(response));
+                _processResponse(response);
+            }
+        } else {
+            _addToCommandLog(QString("UTG: %1").arg(text));
         }
     }
 }
@@ -590,13 +602,7 @@ void UTGCommunication::_onCommandTimeout()
 void UTGCommunication::_onVehicleConnectionChanged()
 {
     if (_vehicle && !_vehicle->connectionLost()) {
-        if (!_connected && _settings && _settings->autoConnect()->rawValue().toBool()) {
-            QTimer::singleShot(2000, this, [this]() {
-                if (_vehicle && !_vehicle->connectionLost() && !_connected) {
-                    connectToUTG();
-                }
-            });
-        }
+        _scheduleAutoConnectIfNeeded();
     } else {
         _continuousTimer->stop();
         _setContinuousMeasurement(false);
@@ -1074,22 +1080,22 @@ void UTGCommunication::_applyMaterialVelocityPreset(int materialType)
 
 void UTGCommunication::_handleThicknessReading(double thickness, const QString& command)
 {
-    Q_UNUSED(command);
-
     _currentThickness = thickness;
     emit measurementReceived(_currentThickness);
 
-    if (thickness <= 0.0) {
+    if (command != QStringLiteral("S") || thickness <= 0.0) {
         return;
     }
 
-    if (!_nextReadingNotes.isEmpty()) {
-        _readingManager->addReadingWithNotes(thickness, _detectedUnit, _nextReadingNotes);
-        _nextReadingNotes.clear();
-    } else {
-        _readingManager->onNewReading(thickness, _detectedUnit, 0);
+    if (_settings && _settings->autoSaveMeasurements()->rawValue().toBool()) {
+        if (!_nextReadingNotes.isEmpty()) {
+            _readingManager->addReadingWithNotes(thickness, _detectedUnit, _nextReadingNotes);
+            _nextReadingNotes.clear();
+        } else {
+            _readingManager->onNewReading(thickness, _detectedUnit, 0);
+        }
+        emit readingSaved();
     }
-    emit readingSaved();
 
     if (_settings && _settings->alertSound()->rawValue().toBool()) {
         qgcApp()->toolbox()->audioOutput()->say(tr("contact"));

@@ -41,6 +41,7 @@ add_library(Vehicle
 target_link_libraries(Vehicle
 	PRIVATE
 		ui
+		Qt5::Concurrent
 	PUBLIC
 		qgc
 )

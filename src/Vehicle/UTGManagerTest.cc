@@ -31,12 +31,14 @@ void UTGManagerTest::init(void)
     _vehicle = vehicleMgr->activeVehicle();
     QVERIFY(_vehicle);
     
-    _utgManager = _vehicle->utgManager();
+    _utgManager = new UTGManager(_vehicle, this);
     QVERIFY(_utgManager);
 }
 
 void UTGManagerTest::cleanup(void)
 {
+    delete _utgManager;
+    _utgManager = nullptr;
     _disconnectMockLink();
     UnitTest::cleanup();
 }

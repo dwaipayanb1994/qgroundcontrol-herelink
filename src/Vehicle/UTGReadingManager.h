@@ -14,20 +14,25 @@
 #include <QAbstractListModel>
 #include <QObject>
 
+class QTimer;
+template<typename T> class QFutureWatcher;
+
 class Vehicle;
 
-/// Manages UTG thickness reading history with persistent JSON storage
+/// Manages UTG thickness reading history with persistent CSV storage
 class UTGReadingManager : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
+    Q_PROPERTY(int  count   READ rowCount      NOTIFY countChanged)
+    Q_PROPERTY(bool loading READ loading       NOTIFY loadingChanged)
 
 public:
     enum ReadingRoles {
         DateTimeRole = Qt::UserRole + 1,
         ReadingRole,
         GpsLocationRole,
+        AltitudeRole,
         NotesRole,
         ThicknessRole,
         UnitRole,
@@ -35,8 +40,11 @@ public:
     Q_ENUM(ReadingRoles)
 
     explicit UTGReadingManager(QObject* parent = nullptr);
+    ~UTGReadingManager();
 
     void setVehicle(Vehicle* vehicle);
+
+    bool loading() const { return _loadInProgress; }
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -50,23 +58,34 @@ public:
     Q_INVOKABLE void clearAll();
     Q_INVOKABLE void setNotes(int row, const QString& notes);
     Q_INVOKABLE void reload();
+    Q_INVOKABLE void reloadAsync();
     Q_INVOKABLE QString notesAt(int row) const;
-    Q_INVOKABLE QString toJsonString() const;
-    Q_INVOKABLE bool loadFromJsonString(const QString& json);
+    Q_INVOKABLE QString toCsvString() const;
+    Q_INVOKABLE bool importCsvFromString(const QString& csv);
     Q_INVOKABLE QString defaultStoragePath() const;
 
 signals:
     void countChanged();
+    void loadingChanged(bool loading);
+    void readingsLoaded();
 
 private:
     void _appendReading(const UTGReading& reading);
+    void _applyVehicleLocation(UTGReading& reading) const;
+    void _applyLoadedReadings(const QList<UTGReading>& readings);
     QString _storagePath() const;
     bool _loadFromFile(const QString& path);
-    bool _loadFromJsonDocument(const QJsonDocument& doc);
+    bool _loadFromCsvDocument(const QString& csv);
     void _loadFromDisk();
+    void _scheduleSaveToDisk();
     void _saveToDisk();
     QString _formatGpsLocation(const QGeoCoordinate& coordinate) const;
+    QString _formatAltitude(const QGeoCoordinate& coordinate) const;
 
-    Vehicle*            _vehicle = nullptr;
-    QList<UTGReading>   _readings;
+    Vehicle*                                _vehicle = nullptr;
+    QList<UTGReading>                       _readings;
+    QTimer*                                 _saveTimer = nullptr;
+    QFutureWatcher<QList<UTGReading>>*      _loadWatcher = nullptr;
+    bool                                    _loadInProgress = false;
+    int                                     _loadGeneration = 0;
 };
