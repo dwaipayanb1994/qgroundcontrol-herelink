@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/custom">
+        <file alias="CustomThicknessReadingFlyView.qml">res/CustomThicknessReadingFlyView.qml</file>
+    </qresource>
+    <qresource prefix="/qml">
+        <file alias="UTGPanel.qml">../src/ui/qml/UTGPanel.qml</file>
+        <file alias="UTGMeasurementPanel.qml">../src/ui/qml/UTGMeasurementPanel.qml</file>
+        <file alias="UTGConfigurationPanel.qml">../src/ui/qml/UTGConfigurationPanel.qml</file>
+        <file alias="UTGDeviceInfoPanel.qml">../src/ui/qml/UTGDeviceInfoPanel.qml</file>
+        <file alias="UTGCalibrationPanel.qml">../src/ui/qml/UTGCalibrationPanel.qml</file>
+        <file alias="UTGStatusPanel.qml">../src/ui/qml/UTGStatusPanel.qml</file>
+        <file alias="UTGSettingsPanel.qml">../src/ui/qml/UTGSettingsPanel.qml</file>
+        <file alias="UTGReadingListPanel.qml">../src/ui/qml/UTGReadingListPanel.qml</file>
+    </qresource>
+</RCC>
