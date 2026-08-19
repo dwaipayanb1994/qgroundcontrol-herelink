@@ -96,8 +96,20 @@ Rectangle {
                     fact: utgSettings.measurementMode
                     Layout.fillWidth: true
                 }
-                
-                QGCLabel { text: qsTr("Sound Velocity:") }
+
+                QGCLabel { text: qsTr("Probe Model:") }
+                FactComboBox {
+                    fact: utgSettings.probeModel
+                    Layout.fillWidth: true
+                }
+
+                QGCLabel { text: qsTr("Material:") }
+                FactComboBox {
+                    fact: utgSettings.materialType
+                    Layout.fillWidth: true
+                }
+
+                QGCLabel { text: qsTr("Sound Velocity (m/s):") }
                 FactTextField {
                     fact: utgSettings.soundVelocity
                     Layout.fillWidth: true
@@ -134,12 +146,6 @@ Rectangle {
                     Layout.fillWidth: true
                 }
                 
-                QGCLabel { text: qsTr("Material Type:") }
-                FactComboBox {
-                    fact: utgSettings.materialType
-                    Layout.fillWidth: true
-                }
-                
                 QGCLabel { text: qsTr("Temperature Compensation:") }
                 FactCheckBox {
                     fact: utgSettings.temperatureCompensation
@@ -159,22 +165,17 @@ Rectangle {
                 columnSpacing: ScreenTools.defaultFontPixelWidth
                 rowSpacing: ScreenTools.defaultFontPixelHeight * 0.25
                 
-                QGCLabel { text: qsTr("Log Measurements:") }
-                FactCheckBox {
-                    fact: utgSettings.logMeasurements
-                    Layout.fillWidth: true
-                }
-                
-                QGCLabel { text: qsTr("Auto Save:") }
+                QGCLabel { text: qsTr("Auto Save Readings:") }
                 FactCheckBox {
                     fact: utgSettings.autoSaveMeasurements
                     Layout.fillWidth: true
                 }
                 
-                QGCLabel { text: qsTr("Log File Path:") }
+                QGCLabel { text: qsTr("CSV File Path:") }
                 FactTextField {
                     fact: utgSettings.logFilePath
                     Layout.fillWidth: true
+                    Layout.columnSpan: 2
                 }
             }
         }

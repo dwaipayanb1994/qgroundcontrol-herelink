@@ -50,10 +50,9 @@ CustomPlugin::settingsPages()
     if(!_customSettingsList.count()) {
         _customSettingsList = QGCCorePlugin::settingsPages();
 
-        // Add UTG Panel to settings
         _customSettingsList.append(QVariant::fromValue(
-            new QmlComponentInfo(tr("UTG Control"),
-                                QUrl::fromUserInput("qrc:/qml/UTGPanel.qml"),
+            new QmlComponentInfo(tr("UTG"),
+                                QUrl::fromUserInput("qrc:/qml/UTGSettings.qml"),
                                 QUrl::fromUserInput("qrc:/res/gear-white.svg"),
                                 this)));
     }
