@@ -101,6 +101,7 @@
 #include "VehicleObjectAvoidance.h"
 #include "TrajectoryPoints.h"
 #include "UTGCommunication.h"
+#include "UTGReadingManager.h"
 #include "QGCImageProvider.h"
 
 #if defined(QGC_ENABLE_PAIRING)
@@ -494,6 +495,7 @@ void QGCApplication::_initCommon()
     qmlRegisterUncreatableType<ParameterManager>        (kQGCVehicle,                       1, 0, "ParameterManager",           kRefOnly);
     qmlRegisterUncreatableType<VehicleObjectAvoidance>  (kQGCVehicle,                       1, 0, "VehicleObjectAvoidance",     kRefOnly);
     qmlRegisterUncreatableType<UTGCommunication>        (kQGCVehicle,                       1, 0, "UTGCommunication",           kRefOnly);
+    qmlRegisterUncreatableType<UTGReadingManager>       (kQGCVehicle,                       1, 0, "UTGReadingManager",          kRefOnly);
     qmlRegisterUncreatableType<QGCCameraManager>        (kQGCVehicle,                       1, 0, "QGCCameraManager",           kRefOnly);
     qmlRegisterUncreatableType<QGCCameraControl>        (kQGCVehicle,                       1, 0, "QGCCameraControl",           kRefOnly);
     qmlRegisterUncreatableType<QGCVideoStreamInfo>      (kQGCVehicle,                       1, 0, "QGCVideoStreamInfo",         kRefOnly);
