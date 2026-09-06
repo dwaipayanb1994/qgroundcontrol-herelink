@@ -16,6 +16,20 @@ add_library(Vehicle
 	MultiVehicleManager.h
 	TrajectoryPoints.cc
 	TrajectoryPoints.h
+	UTGManager.cc
+	UTGManager.h
+	UTGManagerTest.cc
+	UTGManagerTest.h
+	UTGIntegrationTest.cc
+	UTGIntegrationTest.h
+	UTGCommunication.cc
+	UTGCommunication.h
+	UTGCommunicationTest.cc
+	UTGCommunicationTest.h
+	UTGReading.cc
+	UTGReading.h
+	UTGReadingManager.cc
+	UTGReadingManager.h
 	Vehicle.cc
 	Vehicle.h
 	VehicleObjectAvoidance.cc
@@ -27,6 +41,7 @@ add_library(Vehicle
 target_link_libraries(Vehicle
 	PRIVATE
 		ui
+		Qt5::Concurrent
 	PUBLIC
 		qgc
 )
